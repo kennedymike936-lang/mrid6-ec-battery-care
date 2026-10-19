@@ -34,7 +34,7 @@ WinRing0 DLL 用 `GetModuleFileName(NULL, ...)` 找 `.sys` —— 那是**宿主
 那份 DLL 的 ABI 与常见声明不一致。**别调它**。
 需要驱动版本就用 IOCTL `IOCTL_OLS_GET_DRIVER_VERSION`（`0x9C402000`）走 `DeviceIoControl`。
 
-本项目已经**完全绕开 DLL**，不需要 `InitializeOls`。
+本仓库的直接 `DeviceIoControl` 研究工具可绕开 DLL；但主流程 `ECGuard-Kernel.ps1` 使用 C# 桥接，仍会调用 DLL 的 `InitializeOls()`。两条 transport 路径不要混为一谈。
 
 ### A4. `DeviceIoControl` 返回失败，错误 87（参数错误）
 

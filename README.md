@@ -1,5 +1,10 @@
 # MRID6 EC 电池养护模式（60%–80% 原生阈值）
 
+**中文** | [English](README.en.md)
+
+**第一次使用？从 [中文新手操作指南](docs/06-getting-started.zh-CN.md) 开始。**
+指南包含下载、安装 Python、管理员终端、逐步命令、结果判读、撤销和排障；不需要会编程，也不需要使用 AI。
+
 > 给 **机械革命 蛟龙16 Pro / MRID6-23**（Insyde BIOS、ITE IT5570 EC、BM5235 电池）开启
 > **EC 原生**的充电上限：插电只充到 80%，掉到 60% 才回充。一次配置，**无需常驻程序**。
 
@@ -65,6 +70,17 @@ SOC 到 80%  → 停止充电，保持（插电但不充不放）
 
 > 其他机型 / 其他 EC 版本**不要照搬**。本项目的寄存器地图是逐字节对比加实机验证得出的。
 
+### 其他机械革命机型可以参考吗？
+
+**可以参考研究方法，但不能据此认定兼容。** 同品牌、同系列甚至同型号的不同批次，也可能使用不同的主板、EC、固件和电池。
+本项目不是机械革命全系通用工具；上面的实测记录也不能外推到其他机器。
+
+可以借鉴的部分包括：如何寻找固件原生充电策略、如何用 EC 状态与 Windows 遥测交叉判断、如何限制写入以及处理不确定状态。
+不能直接照抄的是 EC 端口协议、寄存器地址、邮箱命令、阈值写法和驱动适配。
+
+其他机型请先看 [其他机械革命机型参考说明](docs/07-other-mechrevo-models.md)。
+**不要修改机型检查或白名单来强行运行。** 不具备固件分析能力时，可以先记录型号与版本，在仓库 Issues 中询问；无需先运行任何 EC 工具。
+
 ### 已验证到什么程度
 
 | 项目 | 状态 |
@@ -85,8 +101,8 @@ SOC 到 80%  → 停止充电，保持（插电但不充不放）
 ## 工作原理（简述）
 
 ```
-Windows 程序
-   │  DeviceIoControl（我们自己的最小 transport）
+Windows 程序（主流程：Python → C# 桥接 → WinRing0 DLL）
+   │  内核驱动访问（独立研究工具另有直接 DeviceIoControl transport）
    ▼
 WinRing0 内核驱动  →  端口 0x62 / 0x66
    ▼
@@ -118,6 +134,9 @@ ITE IT5570 EC  →  扩展命令 0x92(读) / 0x93(写)  →  EC XRAM
 
 ## 快速开始
 
+下面是熟悉命令行用户的简版。首次使用请跟随 [完整新手指南](docs/06-getting-started.zh-CN.md)，每一步确认成功后再继续。
+所有 PowerShell 命令均在**管理员 Windows PowerShell**、仓库根目录下执行；不要双击 `.ps1` 文件。
+
 ### 0. 准备
 
 - Windows 10/11，**管理员权限**
@@ -127,12 +146,14 @@ ITE IT5570 EC  →  扩展命令 0x92(读) / 0x93(写)  →  EC XRAM
 ### 1. 部署驱动到受保护目录
 
 ```powershell
-# 先取得驱动文件并校验（本项目不附带二进制）
-python fetch_driver.py
+# 先确认 Python 3.10+，固定本窗口使用的解释器
+$env:ECGUARD_PYTHON = (python -c "import sys; print(sys.executable)").Trim()
+& $env:ECGUARD_PYTHON .\fetch_driver.py
 
 # 部署 + 锁定 ACL（需要管理员）
-powershell -ExecutionPolicy Bypass -Command "& .\windows\Install-EcGuard.ps1"
-powershell -ExecutionPolicy Bypass -Command "& .\windows\ECGuard-Deploy.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\Install-EcGuard.ps1
+# 上一条成功才运行下一条
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\ECGuard-Deploy.ps1
 ```
 
 > 驱动会被放到 `C:\ProgramData\ECGuard\driver`，ACL 设为
@@ -146,8 +167,7 @@ powershell -ExecutionPolicy Bypass -Command "& .\windows\ECGuard-Deploy.ps1"
 ### 2. 只读巡检（**不要跳过**）
 
 ```powershell
-. .\windows\ECGuard-Kernel.ps1   # 或在管理员 PowerShell 里：
-.\windows\ECGuard-Kernel.ps1 -Action inspect
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\ECGuard-Kernel.ps1 -Action inspect
 ```
 
 它会检查：EC 版本、平台是否 MRID6、邮箱是否空闲、模式是否已知、
@@ -158,7 +178,7 @@ EC 与 Windows 的 AC/SOC 是否一致、寄存器是否稳定。**任一项不�
 **先确认 SOC 在 60%–79%**（不要 ≥80%），然后：
 
 ```powershell
-.\windows\ECGuard-Kernel.ps1 -Action enable
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\ECGuard-Kernel.ps1 -Action enable
 ```
 
 只写 4 个字节，严格按序：
@@ -173,10 +193,12 @@ EC 与 Windows 的 AC/SOC 是否一致、寄存器是否稳定。**任一项不�
 ### 4. 验证
 
 ```powershell
-python tools\care_state_check.py
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\ECGuard-Kernel.ps1 -Action verify
 ```
 
-期望看到：
+`verify` 会输出 5 次只读采样，默认间隔 10 秒。输出是 JSON：`mode: 72` 等于十六进制 `0x48`。
+**退出码 0 只表示采样正常结束，不会自动判定养护已生效。** 请按 [结果判读](docs/06-getting-started.zh-CN.md#8-确认是否生效) 核对模式、阈值和遥测。
+已经进入停充保持时的典型状态是（刚启用后仍在正常充电时，子状态可以不同）：
 
 ```
 83C0 = 0x48   83A0 = 0x02   8370 = 0x32   83A1/83A2 = 80/60
@@ -186,10 +208,12 @@ charging=false   discharging=false   ChargeRate=0   DischargeRate=0
 ### 5. 想撤销
 
 ```powershell
-.\windows\ECGuard-Kernel.ps1 -Action disable    # 提交 0x8151=0x0F, 0x8150=0x10
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\windows\ECGuard-Kernel.ps1 -Action disable
 ```
 
-或直接**长按电源键硬断电**（不推荐，但这确实会清掉，因为 EC 会复位）。
+再用 `verify` 确认 `mode` 回到 `0`。删除文件不会撤销 EC 配置。
+若出现异常或 guard 阻止恢复，请看 [安全说明](SAFETY.md) 和 [故障处理](docs/06-getting-started.zh-CN.md#10-常见问题)。
+硬断电会丢失配置，但不能把普通 Windows 重启当成 EC 复位。
 
 ---
 
