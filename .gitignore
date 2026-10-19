@@ -1,0 +1,35 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# ---- ECGuard runtime state / output ----
+logs/
+driver/
+.selftest-state/
+*.jsonl
+
+# ---- NEVER commit these ----
+# Kernel driver binaries: obtain via fetch_driver.py, never redistribute.
+WinRing0x64.dll
+WinRing0x64.sys
+# Compiled bridge: build from windows/ECGuardBridge.cs.
+*.exe
+# OEM firmware dumps: do not redistribute vendor firmware.
+ec_*.bin
+BIOS*.bin
+*.bios
+
+# ---- OS / editor ----
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# ---- Local reports that may contain machine-specific data ----
+# (the curated docs in docs/ are safe to commit)
+*-report.json

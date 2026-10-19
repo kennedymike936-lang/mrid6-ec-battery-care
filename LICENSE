@@ -1,0 +1,39 @@
+MIT License
+
+Copyright (c) 2026 mrid6-ec-battery-care contributors
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+---
+
+NOTICE
+
+This repository contains NO vendor firmware, NO vendor drivers, and NO
+third-party binaries.
+
+It interoperates with the WinRing0 kernel driver, which is Copyright (C)
+2007-2009 OpenLibSys.org / hiyohiyo and distributed under the Modified BSD
+License. WinRing0 is NOT included here; you must obtain it yourself. See
+SAFETY.md.
+
+Reverse-engineering notes in docs/ were produced for interoperability with
+hardware owned by the author, and are provided as documentation only.
+
+USE AT YOUR OWN RISK. The authors are not responsible for hardware damage,
+data loss, or voided warranties.
